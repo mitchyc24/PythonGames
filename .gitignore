@@ -1,0 +1,9 @@
+
+
+# pycache directory
+__pycache__/
+
+
+# Compiled Python code
+*.pyc
+
