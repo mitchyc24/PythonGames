@@ -34,17 +34,17 @@ To get started with the games in this repository, follow these steps:
    \`\`\`sh
    cd PythonGames
    \`\`\`
-3. Install the required dependencies (if any):
+3. Install the required dependencies:
    \`\`\`sh
    pip install -r requirements.txt
    \`\`\`
 
 ## Usage
 
-Each game is located in its own directory. To run a game, navigate to the corresponding directory and execute the main Python file. For example, to play Tic-Tac-Toe:
+The games are meant to be accessed through the main application by running:
 
 \`\`\`sh
-cd games/tic-tac-toe
+cd games/PythonGames
 python main.py
 \`\`\`
 
