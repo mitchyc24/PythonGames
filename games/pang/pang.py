@@ -30,10 +30,7 @@ class PANG(Game):
                 self.game_init_time = time.time()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            print("Mouse clicked")
- 
-        elif event.type == pygame.MOUSEMOTION:
-            print(f"Mouse @ {event.pos}")
+            print(f"Mouse clicked @ {event.pos}")
 
     def draw_game_time(self, canvas):
         text = self.font.render(self.time_str, True, (255, 255, 255))
