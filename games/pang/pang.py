@@ -1,37 +1,107 @@
-
 import pygame
+from pygame.math import Vector2
 import time
-from game_manager.game import Game
 
-class PANG(Game):
+class PangGame:
     def __init__(self):
-        super().__init__()
-        self.font = pygame.font.Font(None, 36)
+        self.running = True
+        self.surface = None
+        self.bubbles = []
+        self.harpoons = []
+        self.player_pos = Vector2(400, 550)
+        self.player_speed = 200  # pixels per second
+
+    def run(self, screen):
+        width, height = screen.get_size()
+        self.surface = pygame.Surface((width, height))
+        self.bubbles.append(Bubble(Vector2(200, 100), 30, Vector2(100, -150)))  # Initial speed (px/s)
         self.running = True
 
-    def draw(self, canvas: pygame.Surface):
-        canvas.fill((255, 123, 123))
-        self.draw_game_time(canvas)
+    def stop(self):
+        self.running = False
+
+    def get_surface(self):
+        self.draw()
+        return self.surface
+
+    def handle_events(self, dt):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            self.player_pos.x -= self.player_speed * dt
+        if keys[pygame.K_RIGHT]:
+            self.player_pos.x += self.player_speed * dt
+        if keys[pygame.K_SPACE]:
+            self.shoot_harpoon()
+        if keys[pygame.K_ESCAPE]:
+            self.stop()
+
+    def shoot_harpoon(self):
+        harpoon_pos = self.player_pos.copy()
+        self.harpoons.append(harpoon_pos)
+
+    def update(self, dt):
+        self.handle_events(dt)
         
+        # Update harpoons
+        for harpoon in self.harpoons:
+            harpoon.y -= 400 * dt  # Harpoon speed (px/s)
 
-    def update(self):
-        self.time_str = time.strftime("%H:%M:%S", time.gmtime(time.time() - self.game_init_time))
+        # Remove off-screen harpoons
+        self.harpoons = [h for h in self.harpoons if h.y > 0]
+
+        # Update bubbles
+        for bubble in self.bubbles:
+            bubble.update(dt, self.surface)
+
+        # Check for collisions
+        for bubble in self.bubbles[:]:
+            for harpoon in self.harpoons:
+                if (bubble.pos - harpoon).length() < bubble.radius:
+                    self.bubbles.remove(bubble)
+                    self.harpoons.remove(harpoon)
+                    if bubble.radius > 10:
+                        new_radius = bubble.radius // 2
+                        self.bubbles.append(Bubble(bubble.pos, new_radius, Vector2(100, -150)))
+                        self.bubbles.append(Bubble(bubble.pos, new_radius, Vector2(-100, -150)))
+                    break
+
+    def draw(self):
+        self.surface.fill((0, 0, 0))
+        # Draw player
+        pygame.draw.rect(self.surface, (0, 255, 0), (int(self.player_pos.x) - 10, int(self.player_pos.y) - 10, 20, 20))
+
+        # Draw harpoons
+        for harpoon in self.harpoons:
+            pygame.draw.line(self.surface, (255, 255, 255), (int(harpoon.x), int(harpoon.y)), (int(harpoon.x), int(harpoon.y) - 20), 2)
+
+        # Draw bubbles
+        for bubble in self.bubbles:
+            bubble.draw(self.surface)
 
 
-    def check_event(self, event):
-        if event.type == pygame.QUIT:
-            self.running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                print("Game stopping")
-                self.running = False
-            if event.key == pygame.K_r:
-                print("Game restarting")
-                self.game_init_time = time.time()
+class Bubble:
+    def __init__(self, pos, radius, speed):
+        self.pos = Vector2(pos)
+        self.radius = radius
+        self.speed = Vector2(speed)
+        self.gravity = Vector2(0, 9.8)  # Gravity acceleration (pixels per second^2)
 
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            print(f"Mouse clicked @ {event.pos}")
+    def update(self, dt, surface):
+        self.speed += self.gravity * dt
+        self.pos += self.speed * dt
 
-    def draw_game_time(self, canvas):
-        text = self.font.render(self.time_str, True, (255, 255, 255))
-        canvas.blit(text, (10, 10))
+        # Bounce on the sides
+        if self.pos.x - self.radius <= 0 or self.pos.x + self.radius >= surface.get_width():
+            self.speed.x = -self.speed.x
+
+        # Bounce on the top and bottom
+        if self.pos.y - self.radius <= 0 or self.pos.y + self.radius >= surface.get_height():
+            self.speed.y = -self.speed.y
+            # Ensure perfect elasticity
+            if self.pos.y + self.radius >= surface.get_height():
+                self.pos.y = surface.get_height() - self.radius
+            elif self.pos.y - self.radius <= 0:
+                self.pos.y = self.radius
+
+    def draw(self, surface):
+        pygame.draw.circle(surface, (255, 0, 0), (int(self.pos.x), int(self.pos.y)), self.radius)
